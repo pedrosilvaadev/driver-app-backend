@@ -1,0 +1,67 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DriverStatus {
+  online
+  offline
+  on_trip
+}
+
+enum RideStatus {
+  available
+  in_progress
+  picked_up
+  dropped_off
+}
+
+model Driver {
+  id               Int          @id @default(autoincrement())
+  name             String
+  email            String       @unique
+  password         String
+  current_location Json // { lat: number, lng: number }
+  status           DriverStatus @default(offline)
+  rating           Float        @default(4.5) // Could later randomize
+  total_trips      Int          @default(0)
+  rides            Ride[]       @relation("DriverRides")
+
+  @@map("drivers")
+}
+
+model Passenger {
+  id    Int    @id @default(autoincrement())
+  name  String
+  rides Ride[] @relation("PassengerRides")
+
+  @@map("passengers")
+}
+
+model Ride {
+  id              Int        @id @default(autoincrement())
+  driver_id       Int? // Nullable until accepted
+  passenger_id    Int
+  status          RideStatus @default(available)
+  pickup_lat      Float
+  pickup_lng      Float
+  pickup_address  String
+  dropoff_lat     Float
+  dropoff_lng     Float
+  dropoff_address String
+
+  driver    Driver?   @relation("DriverRides", fields: [driver_id], references: [id])
+  passenger Passenger @relation("PassengerRides", fields: [passenger_id], references: [id])
+
+  @@map("rides")
+}
