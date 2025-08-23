@@ -19,12 +19,12 @@ services:
     container_name: nest_backend
     depends_on:
       - db
-    volumes:
-      - .:/app
     ports:
       - "3000:3000"
     env_file:
-      - .env
+      - .env.docker
+    volumes:
+      - .:/app:cached
     command: npm run start:dev
 
 volumes:
