@@ -1,8 +1,17 @@
-import { Body, Controller, Get, Param, Patch, Post, Put } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Put,
+  UseGuards,
+} from "@nestjs/common";
 import { RidesService } from "./rides.service";
-import { CreateRideDto } from "./dto/create-ride.dto";
 import { UpdateRideDto } from "./dto/update-ride.dto";
+import { JwtAuthGuard } from "src/auth/guard/jwt-auth.guard";
 
+@UseGuards(JwtAuthGuard)
 @Controller("rides")
 export class RidesController {
   constructor(private readonly ridesService: RidesService) {}

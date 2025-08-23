@@ -23,6 +23,6 @@ export class SignInDriverUseCase {
       userId: driver.id,
       email: driver.email,
     });
-    return { driver, token };
+    return { driver, access_token: token };
   }
 }
