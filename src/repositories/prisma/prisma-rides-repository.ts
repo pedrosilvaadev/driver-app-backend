@@ -10,12 +10,16 @@ export class PrismaRidesRepository implements RidesRepository {
     return this.prisma.ride.create({ data });
   }
   findById(id: number): Promise<Ride | null> {
-    return this.prisma.ride.findUnique({ where: { id } });
+    return this.prisma.ride.findUnique({
+      where: { id },
+      include: { passenger: true },
+    });
   }
   update(id: number, data: Prisma.RideUpdateInput): Promise<Ride> {
     return this.prisma.ride.update({
       where: { id },
       data,
+      include: { passenger: true },
     });
   }
   findAllAvailable(): Promise<Ride[]> {
