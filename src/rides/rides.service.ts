@@ -4,9 +4,12 @@ import { makeGetRideDetailUseCase } from "./factories/make-get-ride-detail-use-c
 import { makeAcceptRideUseCase } from "./factories/make-accept-ride-use-case";
 import { makeUpdateStatusRideUseCase } from "./factories/make-update-status-ride-use-case";
 import { RideStatus } from "@prisma/client";
+import { RidesGateway } from "./rides.gateway";
 
 @Injectable()
 export class RidesService {
+  constructor(private readonly ridesGateway: RidesGateway) {}
+
   findAll() {
     const ridesUseCase = makeFetchRidesAvailableUseCase();
     return ridesUseCase.execute();
@@ -17,13 +20,25 @@ export class RidesService {
     return ridesUseCase.execute({ id });
   }
 
-  update(id: number) {
+  async update(id: number, driver_id: number) {
     const ridesUseCase = makeAcceptRideUseCase();
-    return ridesUseCase.execute({ id });
+    const { ride } = await ridesUseCase.execute({ id, driver_id });
+    this.ridesGateway.broadcastRideAccepted(ride);
+    return { ride };
   }
 
-  updateStatus({ id, status }: { id: number; status: RideStatus }) {
+  async updateStatus({
+    id,
+    status,
+    driver_id,
+  }: {
+    id: number;
+    status: RideStatus;
+    driver_id: number;
+  }) {
     const ridesUseCase = makeUpdateStatusRideUseCase();
-    return ridesUseCase.execute({ id, status });
+    const { ride } = await ridesUseCase.execute({ id, status, driver_id });
+    this.ridesGateway.broadcastRideUpdate(ride);
+    return { ride };
   }
 }
