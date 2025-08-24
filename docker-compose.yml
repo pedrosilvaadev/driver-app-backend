@@ -12,6 +12,17 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  db_test:
+    image: postgres:15-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-docker}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-docker}
+      POSTGRES_DB: ${POSTGRES_TEST_DB:-uride_test}
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+
   backend:
     build:
       context: .
@@ -29,3 +40,4 @@ services:
 
 volumes:
   postgres_data:
+  postgres_test_data:

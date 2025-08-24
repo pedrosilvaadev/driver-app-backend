@@ -21,6 +21,7 @@ export class PrismaRidesRepository implements RidesRepository {
   findAllAvailable(): Promise<Ride[]> {
     return this.prisma.ride.findMany({
       where: { status: "available" },
+      include: { passenger: true },
     });
   }
 }

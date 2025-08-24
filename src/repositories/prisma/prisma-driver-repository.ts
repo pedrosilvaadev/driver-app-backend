@@ -1,11 +1,11 @@
-import { PrismaService } from '../../prisma/prisma.service';
-import { Driver, Prisma } from '@prisma/client';
-import { Injectable } from '@nestjs/common';
-import { DriversRepository } from '../drivers-repository';
+import { PrismaService } from "../../prisma/prisma.service";
+import { Driver, Prisma } from "@prisma/client";
+import { Injectable } from "@nestjs/common";
+import { DriversRepository } from "../drivers-repository";
 
 @Injectable()
 export class PrismaDriversRepository implements DriversRepository {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   findById(id: number): Promise<Driver | null> {
     return this.prisma.driver.findUnique({ where: { id } });

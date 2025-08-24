@@ -20,7 +20,7 @@ export class SignInDriverUseCase {
     if (!isValid) throw new InvalidCredentialsError();
 
     const token = this.jwtService.sign({
-      userId: driver.id,
+      sub: driver.id,
       email: driver.email,
     });
     return { driver, access_token: token };

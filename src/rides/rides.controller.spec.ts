@@ -11,58 +11,22 @@ const seedData = async (prisma: PrismaService) => {
   await prisma.driver.deleteMany();
   await prisma.passenger.deleteMany();
 
-  const passenger1 = await prisma.passenger.create({
+  const passenger = await prisma.passenger.create({
     data: { name: "Alice" },
   });
-  const passenger2 = await prisma.passenger.create({ data: { name: "Bob" } });
 
-  await prisma.ride.createMany({
-    data: [
-      {
-        id: 1,
-        passenger_id: passenger1.id,
-        status: "available",
-        pickup_lat: -23.55052,
-        pickup_lng: -46.633308,
-        pickup_address: "Av. Paulista, 1000",
-        dropoff_lat: -23.559616,
-        dropoff_lng: -46.658722,
-        dropoff_address: "Rua Oscar Freire, 200",
-      },
-      {
-        id: 2,
-        passenger_id: passenger2.id,
-        status: "available",
-        pickup_lat: -23.561684,
-        pickup_lng: -46.625378,
-        pickup_address: "Rua Augusta, 150",
-        dropoff_lat: -23.570703,
-        dropoff_lng: -46.641468,
-        dropoff_address: "Praça da República, 50",
-      },
-      {
-        id: 3,
-        passenger_id: passenger2.id,
-        status: "in_progress",
-        pickup_lat: -23.561684,
-        pickup_lng: -46.625378,
-        pickup_address: "Rua Augusta, 150",
-        dropoff_lat: -23.570703,
-        dropoff_lng: -46.641468,
-        dropoff_address: "Praça da República, 50",
-      },
-      {
-        id: 4,
-        passenger_id: passenger2.id,
-        status: "in_progress",
-        pickup_lat: -23.561684,
-        pickup_lng: -46.625378,
-        pickup_address: "Rua Augusta, 150",
-        dropoff_lat: -23.570703,
-        dropoff_lng: -46.641468,
-        dropoff_address: "Praça da República, 50",
-      },
-    ],
+  await prisma.ride.create({
+    data: {
+      id: 1,
+      passenger_id: passenger.id,
+      status: "available",
+      pickup_lat: -23.55052,
+      pickup_lng: -46.633308,
+      pickup_address: "Av. Paulista, 1000",
+      dropoff_lat: -23.559616,
+      dropoff_lng: -46.658722,
+      dropoff_address: "Rua Oscar Freire, 200",
+    },
   });
 };
 
@@ -70,6 +34,7 @@ describe("RidesController (e2e)", () => {
   let app: INestApplication;
   let jwt: string;
   let prisma: PrismaService;
+  let driver: any;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -85,7 +50,10 @@ describe("RidesController (e2e)", () => {
     await app.init();
 
     prisma = app.get(PrismaService);
+  });
 
+  beforeEach(async () => {
+    await seedData(prisma);
     await request(app.getHttpServer()).post("/auth/signup").send({
       name: "Driver Test",
       email: "driver@test.com",
@@ -97,11 +65,8 @@ describe("RidesController (e2e)", () => {
       password: "test1234",
     });
 
+    driver = res.body.driver;
     jwt = res.body.access_token;
-  });
-
-  beforeEach(async () => {
-    await seedData(prisma);
   });
 
   afterAll(async () => {
@@ -151,32 +116,86 @@ describe("RidesController (e2e)", () => {
   });
 
   it("/rides/:id/accept (PATCH) should return ride not available", async () => {
+    const passenger = await prisma.passenger.create({ data: { name: "Bob" } });
+
+    await prisma.ride.create({
+      data: {
+        id: 2,
+        passenger_id: passenger.id,
+        status: "available",
+        pickup_lat: -23.561684,
+        pickup_lng: -46.625378,
+        pickup_address: "Rua Augusta, 150",
+        dropoff_lat: -23.570703,
+        dropoff_lng: -46.641468,
+        dropoff_address: "Praça da República, 50",
+      },
+    });
+
+    await request(app.getHttpServer())
+      .patch("/rides/2/accept")
+      .set("Authorization", `Bearer ${jwt}`);
+
     const res = await request(app.getHttpServer())
-      .patch("/rides/3/accept")
+      .patch("/rides/2/accept")
       .set("Authorization", `Bearer ${jwt}`);
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Ride is not available");
   });
 
   it("/rides/:id/status (PUT) should update ride status picked_up", async () => {
+    const passenger = await prisma.passenger.create({ data: { name: "Bob" } });
+
+    await prisma.ride.create({
+      data: {
+        id: 2,
+        passenger_id: passenger.id,
+        status: "in_progress",
+        pickup_lat: -23.561684,
+        pickup_lng: -46.625378,
+        pickup_address: "Rua Augusta, 150",
+        dropoff_lat: -23.570703,
+        dropoff_lng: -46.641468,
+        dropoff_address: "Praça da República, 50",
+        driver_id: driver.id,
+      },
+    });
+
     const res = await request(app.getHttpServer())
-      .put("/rides/3/status")
+      .put("/rides/2/status")
       .set("Authorization", `Bearer ${jwt}`)
-      .send({ status: "picked_up" });
+      .send({ status: "picked_up", driver_id: driver.id });
     expect(res.status).toBe(200);
     const { ride } = res.body;
-    expect(ride).toHaveProperty("id", 3);
+    expect(ride).toHaveProperty("id", 2);
     expect(ride).toHaveProperty("status", "picked_up");
   });
 
   it("/rides/:id/status (PUT) should update ride status dropped_off", async () => {
+    const passenger = await prisma.passenger.create({ data: { name: "Bob" } });
+
+    await prisma.ride.create({
+      data: {
+        id: 2,
+        passenger_id: passenger.id,
+        status: "picked_up",
+        pickup_lat: -23.561684,
+        pickup_lng: -46.625378,
+        pickup_address: "Rua Augusta, 150",
+        dropoff_lat: -23.570703,
+        dropoff_lng: -46.641468,
+        dropoff_address: "Praça da República, 50",
+        driver_id: driver.id,
+      },
+    });
+
     const res = await request(app.getHttpServer())
-      .put("/rides/4/status")
+      .put("/rides/2/status")
       .set("Authorization", `Bearer ${jwt}`)
-      .send({ status: "dropped_off" });
+      .send({ status: "dropped_off", driver_id: driver.id });
     expect(res.status).toBe(200);
     const { ride } = res.body;
-    expect(ride).toHaveProperty("id", 4);
+    expect(ride).toHaveProperty("id", 2);
     expect(ride).toHaveProperty("status", "dropped_off");
   });
 
